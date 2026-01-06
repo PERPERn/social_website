@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WWI Deck • Mobile Safe</title>
+
+  <!-- ✅ Tailwind config MUST be set BEFORE loading the CDN script -->
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["ui-sans-serif","system-ui","Kanit","Noto Sans Thai","sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    html, body { height: 100%; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+    .fade-enter { opacity: 0; transform: translateY(16px); filter: blur(8px); }
+    .fade-enter-active { opacity: 1; transform: translateY(0); filter: blur(0); transition: all 420ms cubic-bezier(.22,1,.36,1); }
+    .fade-exit { opacity: 1; transform: translateY(0); filter: blur(0); }
+    .fade-exit-active { opacity: 0; transform: translateY(-12px); filter: blur(8px); transition: all 320ms cubic-bezier(.22,1,.36,1); }
+
+    .noise {
+      background-image:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.10) 0px, rgba(255,255,255,0.10) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0px, rgba(255,255,255,0.08) 1px, transparent 1px, transparent 4px);
+      opacity: .08;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .lc2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .lc3{ display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+
+    .record .topbar, .record .bottombar, .record .sidepanel { display: none !important; }
+    .record .mainpad { padding-bottom: 2.5rem !important; }
+  </style>
+</head>
+
+<body class="bg-[#0b0f1a] text-white font-sans overflow-x-hidden">
+  <!-- Background -->
+  <div id="bg" class="fixed inset-0 bg-gradient-to-br from-yellow-500/8 via-transparent to-cyan-500/8"></div>
+  <div class="fixed -top-28 left-[-140px] h-[520px] w-[520px] rounded-full bg-yellow-400/10 blur-3xl pointer-events-none"></div>
+  <div class="fixed top-10 right-[-170px] h-[440px] w-[440px] rounded-full bg-cyan-400/10 blur-3xl pointer-events-none"></div>
+  <div class="fixed bottom-[-170px] left-[16%] h-[520px] w-[520px] rounded-full bg-violet-400/10 blur-3xl pointer-events-none"></div>
+  <div class="fixed inset-0 noise"></div>
+
+  <!-- Top bar -->
+  <div class="topbar sticky top-0 z-30 border-b border-white/10 bg-[#0b0f1a]/55 backdrop-blur-2xl">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="h-2.5 w-2.5 rounded-full bg-yellow-300 shadow-[0_0_24px_rgba(253,224,71,0.45)]"></div>
+        <div class="leading-tight">
+          <div class="text-sm font-semibold">WWI Deck • <span class="text-white/80">Mobile Safe</span></div>
+          <div class="text-xs text-white/55">←/→ Space • G overview • N notes • F fullscreen • R record</div>
+        </div>
+      </div>
+      <div class="hidden sm:flex items-center gap-2">
+        <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">1914–1918</span>
+        <span id="slideCount" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">Slide 1/1</span>
+      </div>
+    </div>
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 pb-3">
+      <div class="relative h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div id="progress" class="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-amber-300 via-yellow-300 to-cyan-300 shadow-[0_0_40px_rgba(253,224,71,0.35)] transition-all duration-300" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-24 mainpad relative z-10">
+    <!-- Header row -->
+    <div class="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">✨ Smooth deck</span>
+          <span id="yearPill" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">Year: 1914</span>
+          <span id="recordPill" class="hidden inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">🎥 Record mode</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btnOverview" title="Overview (G)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">☷</button>
+          <button id="btnNotes" title="Notes (N)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">📝</button>
+          <button id="btnRecord" title="Record (R)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">🎥</button>
+          <button id="btnFs" title="Fullscreen (F)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">⛶</button>
+        </div>
+      </div>
+
+      <!-- timeline -->
+      <aside class="sidepanel lg:justify-self-end">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="mb-2 flex items-center justify-between">
+            <div class="text-xs font-semibold text-white/80">Timeline</div>
+            <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
+              Active: <span id="activeYear">1914</span>
+            </span>
+          </div>
+          <div class="relative mt-2">
+            <div class="h-2 w-full rounded-full bg-white/10"></div>
+            <div id="timeFill" class="absolute top-0 h-2 rounded-full bg-gradient-to-r from-amber-300 via-yellow-300 to-cyan-300 shadow-[0_0_30px_rgba(253,224,71,0.28)] transition-all duration-500" style="width:20%"></div>
+          </div>
+          <div class="mt-3 grid grid-cols-5 gap-2 text-center">
+            <div id="y1914" class="rounded-xl border border-yellow-300/40 bg-yellow-300/10 text-yellow-100 px-2 py-2 text-xs">1914</div>
+            <div id="y1915" class="rounded-xl border border-white/10 bg-white/5 text-white/60 px-2 py-2 text-xs">1915</div>
+            <div id="y1916" class="rounded-xl border border-white/10 bg-white/5 text-white/60 px-2 py-2 text-xs">1916</div>
+            <div id="y1917" class="rounded-xl border border-white/10 bg-white/5 text-white/60 px-2 py-2 text-xs">1917</div>
+            <div id="y1918" class="rounded-xl border border-white/10 bg-white/5 text-white/60 px-2 py-2 text-xs">1918</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Deck area -->
+    <section id="deckWrap" class="space-y-6">
+      <div id="overview" class="hidden">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <div class="text-sm font-semibold text-white/85">Overview (กด G หรือ Esc เพื่อปิด)</div>
+          <span id="ovCount" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">Slide 1/1</span>
+        </div>
+        <div id="ovGrid" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+      </div>
+
+      <div id="slide" class="fade-enter"></div>
+
+      <div id="notesBlock" class="hidden rounded-2xl border border-dashed border-white/15 bg-black/20 p-4 text-sm text-white/70">
+        <b class="text-yellow-200">Presenter note:</b> <span id="notesText"></span>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom bar -->
+  <div class="bottombar fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f1a]/55 backdrop-blur-2xl">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <button id="btnPrev" class="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-gradient-to-b from-white/14 to-white/5 px-4 py-3 text-sm font-semibold text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl transition hover:from-white/18 hover:to-white/8 active:translate-y-[1px]">
+          ← ก่อนหน้า
+        </button>
+        <button id="btnNext" class="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-gradient-to-b from-white/14 to-white/5 px-4 py-3 text-sm font-semibold text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)] backdrop-blur-xl transition hover:from-white/18 hover:to-white/8 active:translate-y-[1px]">
+          ถัดไป →
+        </button>
+      </div>
+      <span id="bottomCount" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">
+        Slide 1/1
+      </span>
+    </div>
+  </div>
+
+  <script>
+    console.log("JS RUNNING ✅");
+
+    /* ✅ make clamp GLOBAL (was causing clamp is not defined) */
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    /* --------------------- data --------------------- */
+    const slides = [ /* <-- เหมือนเดิมทั้งหมด ไม่ได้แก้ data ของคุณ */ 
+      {
+        type: "chapter",
+        year: 1914,
+        kicker: "Chapter 1 • จุดเริ่มต้น",
+        title: 'สงครามโลกครั้งที่หนึ่ง <span class="bg-gradient-to-r from-amber-200 to-cyan-200 bg-clip-text text-transparent">(1914–1918)</span>',
+        subtitle: "ความขัดแย้งที่เปลี่ยนกติกาโลก: สาเหตุเชิงระบบ → การตัดสินใจ → สงครามสมัยใหม่ → มรดกถึงปัจจุบัน",
+        notes: "เกริ่น 20–30 วิ: เน้นว่าเราจะมอง 'ระบบ' ไม่ใช่โทษคนคนเดียว แล้วเปิดหัวข้อภาพรวมทั้งคลิป"
+      },
+      {
+        type: "content",
+        year: 1914,
+        kicker: "Slide 2 • โลกก่อนสงคราม",
+        title: "ยุโรปก่อนปี 1914: ถังดินปืนที่รอประกายไฟ",
+        subtitle: "ภายนอกคือความเจริญ ภายในคือการแข่งขันอำนาจ + ความกลัว + การสะสมกำลัง",
+        bullets: [
+          "มหาอำนาจยุโรปแข่งขันเรื่อง <b class='text-white'>อิทธิพล</b> และ <b class='text-white'>ศักดิ์ศรี</b>",
+          "อุตสาหกรรมทำให้ผลิตอาวุธได้เร็วขึ้น → <span class='text-white/80'>“เตรียมรบ” กลายเป็นปกติ</span>",
+          "ความหวาดระแวง: “ถ้าเราไม่พร้อม… อีกฝ่ายจะโจมตีก่อน”"
+        ],
+        side: [
+          { h: "ภาพจำ", t: "โลกเหมือนถังดินปืน—ต้องการแค่ประกายไฟเล็ก ๆ" },
+          { h: "โฟกัสในคลิป", t: "เน้นโครงสร้าง: ความกลัว + การแข่งขัน มากกว่าความเกลียดส่วนบุคคล" }
+        ],
+        notes: "ย้ำว่า 'สงครามไม่ได้เกิดจากความบ้าคลั่งอย่างเดียว' แต่จากระบบที่ดันให้ทุกฝ่ายคิดว่าต้องตัดสินใจเร็ว"
+      },
+      {
+        type: "content",
+        year: 1914,
+        kicker: "Slide 3 • สาเหตุระยะยาว",
+        title: "สาเหตุระยะยาว: <span class='text-yellow-200'>MAIN</span>",
+        subtitle: "ปัจจัยสะสมความตึงเครียดจนทำให้ “ความผิดพลาดเล็ก ๆ” กลายเป็นหายนะ",
+        bullets: [
+          "<b class='text-white'>Militarism</b>: แข่งสะสมกองทัพ/อาวุธ → กดดันให้ใช้กำลังแทนเจรจา",
+          "<b class='text-white'>Alliances</b>: พันธมิตรแข็งกร้าว → วิกฤตจุดเดียวลุกลามทั้งทวีป",
+          "<b class='text-white'>Imperialism</b>: แข่งอาณานิคม/ทรัพยากร → ความขัดแย้งสะสม",
+          "<b class='text-white'>Nationalism</b>: ชาตินิยมรุนแรง โดยเฉพาะบอลข่าน → ปะทะจักรวรรดิใหญ่"
+        ],
+        side: [{ h: "ประโยคจำ", t: "MAIN = แรงตึงสะสม • Trigger = ประกายไฟ" }],
+        notes: "พูดชัด ๆ ว่า MAIN ไม่ได้บังคับให้เกิดสงคราม แต่ทำให้ 'คุมสถานการณ์' ยากขึ้นมากเมื่อเกิดวิกฤต"
+      },
+      {
+        type: "content",
+        year: 1914,
+        kicker: "Slide 4 • ชนวนเหตุ",
+        title: "Sarajevo 28 มิ.ย. 1914: กระสุนนัดเดียว สั่นทั้งยุโรป",
+        subtitle: "การลอบสังหาร Archduke Franz Ferdinand → วิกฤตการทูต → โดมิโนพันธมิตร",
+        bullets: [
+          "ลอบสังหารรัชทายาทออสเตรีย-ฮังการี → ออสเตรียต้องการ “ลงโทษ” เซอร์เบีย",
+          "ห่วงโซ่พันธมิตรเร่งการยกระดับ: รัสเซียหนุนเซอร์เบีย → เยอรมนีหนุนออสเตรีย",
+          "บุกผ่านเบลเยียม → อังกฤษเข้าร่วม → สงครามลุกลามเร็ว"
+        ],
+        side: [{ h: "Key idea", t: "ชนวน ≠ สาเหตุทั้งหมด แต่เป็นจุดที่ทำให้ระบบระเบิด" }],
+        notes: "ย้ำคำว่า 'ชนวน' ไม่ใช่สาเหตุทั้งหมด (เพราะความตึงเครียดสะสมมานานแล้ว)"
+      },
+      {
+        type: "chapter",
+        year: 1915,
+        kicker: "Chapter 2 • รูปแบบการรบ",
+        title: "จากสงครามคาดหวังสั้น ๆ สู่สงครามยืดเยื้อ",
+        subtitle: "สนามเพลาะทำให้แนวรบ “ตรึง” และเปลี่ยนสงครามเป็นการสึกหรอ (war of attrition)",
+        notes: "เปลี่ยนอารมณ์คลิปให้เข้มขึ้น: จากการทูต/ระบบ → เข้าสู่ความจริงในสนามรบ"
+      },
+      {
+        type: "content",
+        year: 1916,
+        kicker: "Slide 6 • สนามเพลาะ",
+        title: "Trench Warfare: ยึดพื้นที่ได้น้อย แต่ตายมหาศาล",
+        subtitle: "แนวรบตะวันตก “ตรึง” ยืดเยื้อ → สงครามสึกหรอ",
+        bullets: [
+          "สนามเพลาะยาวหลายร้อยกิโลเมตร → สภาพโหด: โคลน หนู โรคภัย",
+          "การบุกผ่านลวดหนาม/ปืนกล → สูญเสียหนัก แต่แทบไม่คืบหน้า",
+          "สงครามกลายเป็น “ทำให้อีกฝ่ายหมดแรง/หมดคน” มากกว่าชัยชนะฉับพลัน"
+        ],
+        side: [{ h: "ทำไมมันตัน?", t: "ปืนกล + ปืนใหญ่ ทำให้การเคลื่อนที่กลางสนามเปิดแทบเป็นไปไม่ได้" }],
+        notes: "ถ้าจะยกตัวอย่างชื่อยุทธการ (Somme/Verdun) ให้พูดสั้น ๆ แล้วกลับมาเน้นภาพรวมเรื่อง 'สึกหรอ'"
+      },
+      {
+        type: "content",
+        year: 1915,
+        kicker: "Slide 7 • อาวุธใหม่",
+        title: "เทคโนโลยีใหม่: สงครามสมัยใหม่ที่โหดขึ้น",
+        subtitle: "ปืนกล • ปืนใหญ่ • ก๊าซพิษ • รถถัง • เครื่องบิน → เปลี่ยนเกม",
+        bullets: [
+          "<b class='text-white'>ปืนกล & ปืนใหญ่</b>: ทำให้การบุกหน้ากระดานเป็นการสังหารหมู่",
+          "<b class='text-white'>ก๊าซพิษ</b>: ความทุกข์ทรมาน บาดเจ็บถาวร และความหวาดกลัวทางจิตใจ",
+          "<b class='text-white'>รถถัง/เครื่องบิน</b>: จุดเริ่มสงครามยุคใหม่ (ช่วงแรกยังมีข้อจำกัด)"
+        ],
+        side: [{ h: "ประโยคจำ", t: "เทคโนโลยีเร็วกว่า ‘จริยธรรม’ → ความสูญเสียยิ่งน่ากลัว" }],
+        notes: "ยกภาพจำ: หน้ากากกันแก๊ส/รถถังยุคแรก"
+      },
+      {
+        type: "chapter",
+        year: 1917,
+        kicker: "Chapter 3 • ผลกระทบและจุดเปลี่ยน",
+        title: "เมื่อสงครามกระทบทั้งสังคมและการเมืองโลก",
+        subtitle: "ผู้คนไม่ได้เสียหายแค่ในสนามรบ แต่ทั้งเศรษฐกิจ การเมือง และจิตใจของสังคม",
+        notes: "คุมโทนให้เหมือนสารคดี: ‘สงครามไม่ได้จบเมื่อเสียงระเบิดหยุด’"
+      },
+      {
+        type: "content",
+        year: 1917,
+        kicker: "Slide 9 • ผลกระทบสังคม",
+        title: "สงครามไม่ได้จบในสนามรบ",
+        subtitle: "การสูญเสีย • ผู้หญิงในแรงงาน • บาดแผลทางใจ (PTSD) • ความไม่ไว้วางใจรัฐ",
+        bullets: [
+          "ผู้เสียชีวิตรวมระดับ “หลายสิบล้าน” (ทหาร+พลเรือน) และผู้บาดเจ็บจำนวนมหาศาล",
+          "ผู้หญิงเข้าสู่โรงงาน/การแพทย์ → เปลี่ยนบทบาททางสังคมอย่างถาวร",
+          "Trauma ของทหารผ่านศึก (shell shock) → แนวคิด PTSD ในปัจจุบัน"
+        ],
+        side: [{ h: "มิติที่คนมองข้าม", t: "สงครามสร้างแผลในใจและทำให้สังคมเริ่มตั้งคำถามกับรัฐ" }],
+        notes: "ถ้าพูดให้คม: ‘สงครามทำให้คนรุ่นหนึ่งโตมากับความสูญเสียและความไม่เชื่อใจ’"
+      },
+      {
+        type: "content",
+        year: 1918,
+        kicker: "Slide 10 • การเมืองหลังสงคราม",
+        title: "สันติภาพที่ไม่ยุติธรรม = เชื้อไฟใหม่",
+        subtitle: "การล่มสลายจักรวรรดิ + เงื่อนไขลงโทษ → ความคับแค้น → ความสุดโต่ง → ปูทางสู่ WWII",
+        bullets: [
+          "จักรวรรดิใหญ่หลายแห่งล่มสลาย → เกิดรัฐใหม่และปัญหาพรมแดน",
+          "สนธิสัญญาแวร์ซายลงโทษเยอรมนีหนัก → เศรษฐกิจ/การเมืองปั่นป่วน",
+          "ความอับอาย + ภาระชดเชย → เปิดพื้นที่ให้แนวคิดสุดโต่ง"
+        ],
+        side: [{ h: "ประโยคเด็ด", t: "สันติภาพที่ลงโทษมากเกินไป มักไม่ยั่งยืน" }],
+        notes: "โยงสั้น ๆ: เงื่อนไขหลังสงครามเป็นหนึ่งในปัจจัยที่ทำให้เกิด WWII"
+      },
+      {
+        type: "content",
+        year: 1918,
+        kicker: "Final • บทเรียน",
+        title: "บทเรียนจาก WWI (ที่ยังใช้ได้วันนี้)",
+        subtitle: "ลดความหวาดกลัว • กลไกการทูต • ระวังพันธมิตรแข็งกร้าว • เทคโนโลยีต้องคู่จริยธรรม",
+        bullets: [
+          "ความตึงเครียดสะสม + ระบบพันธมิตร ทำให้วิกฤตเล็กกลายเป็นสงครามใหญ่",
+          "การทูตและกลไกคลี่คลายวิกฤตสำคัญกว่าการ “อัปอาวุธ”",
+          "เทคโนโลยีทำให้สงครามโหดขึ้น หากไร้กรอบจริยธรรม"
+        ],
+        side: [
+          { h: "ประโยคปิดคลิป", t: "สงครามไม่ใช่สิ่งที่หลีกเลี่ยงไม่ได้ — มันคือผลของการตัดสินใจภายใต้ระบบที่ล้มเหลว" },
+          { h: "คำถามชวนคิด", t: "ถ้าสัญญาณแบบ 1914 เกิดวันนี้ เราจะสังเกตเห็นอะไรบ้าง?" }
+        ],
+        notes: "พูดช้า ๆ คุมอารมณ์ แล้วหยุด 1 วินาที ก่อนปิดคลิป"
+      }
+    ];
+
+    const years = [1914,1915,1916,1917,1918];
+
+    /* --------------------- state --------------------- */
+    let idx = 0;
+    let notesOn = false;
+    let overviewOn = false;
+    let recordMode = false;
+
+    /* --------------------- DOM refs --------------------- */
+    const elSlide = document.getElementById("slide");
+    const elNotesBlock = document.getElementById("notesBlock");
+    const elNotesText = document.getElementById("notesText");
+    const elOverview = document.getElementById("overview");
+    const elOvGrid = document.getElementById("ovGrid");
+    const elProg = document.getElementById("progress");
+    const elSlideCount = document.getElementById("slideCount");
+    const elBottomCount = document.getElementById("bottomCount");
+    const elOvCount = document.getElementById("ovCount");
+    const elYearPill = document.getElementById("yearPill");
+    const elActiveYear = document.getElementById("activeYear");
+    const elTimeFill = document.getElementById("timeFill");
+    const elBg = document.getElementById("bg");
+    const elRecordPill = document.getElementById("recordPill");
+
+    /* buttons */
+    document.getElementById("btnPrev").onclick = () => prev();
+    document.getElementById("btnNext").onclick = () => next();
+    document.getElementById("btnNotes").onclick = () => toggleNotes();
+    document.getElementById("btnOverview").onclick = () => toggleOverview();
+    document.getElementById("btnRecord").onclick = () => toggleRecord();
+    document.getElementById("btnFs").onclick = () => toggleFs();
+
+    /* --------------------- render helpers --------------------- */
+    function setBgByYear(y){
+      let cls = "from-yellow-500/8 via-transparent to-cyan-500/8";
+      if (y <= 1914) cls = "from-yellow-500/8 via-transparent to-cyan-500/8";
+      else if (y === 1915) cls = "from-yellow-500/7 via-transparent to-violet-500/8";
+      else if (y === 1916) cls = "from-amber-500/7 via-transparent to-cyan-500/9";
+      else if (y === 1917) cls = "from-violet-500/9 via-transparent to-cyan-500/8";
+      else cls = "from-cyan-500/9 via-transparent to-yellow-500/7";
+      elBg.className = `fixed inset-0 bg-gradient-to-br ${cls}`;
+    }
+
+    function setTimeline(y){
+      elActiveYear.textContent = y;
+      const i = years.indexOf(y);
+      const pct = ((i+1)/years.length) * 100;
+      elTimeFill.style.width = pct + "%";
+
+      years.forEach((yy)=>{
+        const el = document.getElementById("y"+yy);
+        if (!el) return;
+        if (yy === y){
+          el.className = "rounded-xl border border-yellow-300/40 bg-yellow-300/10 text-yellow-100 px-2 py-2 text-xs shadow-[0_0_24px_rgba(253,224,71,0.18)]";
+        } else {
+          el.className = "rounded-xl border border-white/10 bg-white/5 text-white/60 px-2 py-2 text-xs";
+        }
+      });
+    }
+
+    function counts(){
+      const t = slides.length;
+      elSlideCount.textContent = `Slide ${idx+1}/${t}`;
+      elBottomCount.textContent = `Slide ${idx+1}/${t}`;
+      elOvCount.textContent = `Slide ${idx+1}/${t}`;
+      elProg.style.width = `${((idx+1)/t)*100}%`;
+    }
+
+    function stripTags(html){
+      const d = document.createElement("div");
+      d.innerHTML = html;
+      return d.textContent || d.innerText || "";
+    }
+
+    function renderOverview(){
+      elOvGrid.innerHTML = "";
+      slides.forEach((s,n)=>{
+        const btn = document.createElement("button");
+        btn.className = "rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:bg-white/10 active:translate-y-[1px]";
+        btn.innerHTML = `
+          <div class="mb-2 flex items-center justify-between">
+            <div class="text-xs text-white/60">${s.kicker}</div>
+            <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">${s.year}</span>
+          </div>
+          <div class="lc2 text-sm font-semibold text-white/90">${stripTags(s.title)}</div>
+          <div class="mt-2 lc3 text-xs leading-relaxed text-white/60">${s.subtitle}</div>
+        `;
+        btn.onclick = ()=>{ idx = n; overviewOn=false; update(); };
+        elOvGrid.appendChild(btn);
+      });
+    }
+
+    function animateSwap(nextHtml){
+      elSlide.classList.remove("fade-enter", "fade-enter-active", "fade-exit", "fade-exit-active");
+      elSlide.classList.add("fade-exit");
+      requestAnimationFrame(()=>{
+        elSlide.classList.add("fade-exit-active");
+        setTimeout(()=>{
+          elSlide.innerHTML = nextHtml;
+          elSlide.classList.remove("fade-exit", "fade-exit-active");
+          elSlide.classList.add("fade-enter");
+          requestAnimationFrame(()=>{
+            elSlide.classList.add("fade-enter-active");
+            setTimeout(()=> elSlide.classList.remove("fade-enter", "fade-enter-active"), 450);
+          });
+        }, 330);
+      });
+    }
+
+    function renderSlide(){
+      const s = slides[idx];
+      const y = s.year;
+
+      setBgByYear(y);
+      setTimeline(y);
+
+      elYearPill.textContent = `Year: ${y}`;
+
+      if (notesOn && s.notes){
+        elNotesText.textContent = s.notes;
+        elNotesBlock.classList.remove("hidden");
+      } else {
+        elNotesBlock.classList.add("hidden");
+      }
+
+      if (overviewOn){
+        elOverview.classList.remove("hidden");
+        renderOverview();
+      } else {
+        elOverview.classList.add("hidden");
+      }
+
+      let html = "";
+      if (s.type === "chapter"){
+        html = `
+          <div class="relative overflow-hidden rounded-[30px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-10 shadow-[0_35px_120px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+            <div class="absolute inset-0 opacity-70">
+              <div class="absolute -left-24 top-0 h-72 w-72 rounded-full bg-yellow-300/10 blur-3xl"></div>
+              <div class="absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl"></div>
+            </div>
+            <div class="relative">
+              <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">✨ ${s.kicker}</span>
+              <h1 class="mt-4 text-balance text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">${s.title}</h1>
+              <p class="mt-3 max-w-3xl text-pretty text-[15px] leading-7 text-white/70 sm:text-[16px]">${s.subtitle}</p>
+            </div>
+          </div>
+        `;
+      } else {
+        const bullets = (s.bullets||[]).map(b=>`
+          <li class="flex gap-3">
+            <span class="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-yellow-300 shadow-[0_0_20px_rgba(253,224,71,0.30)]"></span>
+            <span class="text-[15px] leading-7 text-white/85 sm:text-[16px]">${b}</span>
+          </li>
+        `).join("");
+
+        const side = (s.side||[]).map(c=>`
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="mb-2 text-sm font-semibold text-white/90">✨ ${c.h}</div>
+            <div class="text-sm leading-relaxed text-white/70">${c.t}</div>
+          </div>
+        `).join("");
+
+        html = `
+          <div class="relative overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.06] shadow-[0_35px_120px_rgba(0,0,0,0.58)] backdrop-blur-2xl">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/12 to-transparent opacity-90"></div>
+            <div class="relative p-7 sm:p-10">
+              <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">${s.kicker}</span>
+                <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">⌨ ← → Space</span>
+              </div>
+
+              <h1 class="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">${s.title}</h1>
+              <p class="mt-3 max-w-3xl text-pretty text-[15px] leading-7 text-white/70 sm:text-[16px]">${s.subtitle}</p>
+
+              <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                <div><ul class="space-y-3">${bullets}</ul></div>
+                <div class="space-y-4">${side}</div>
+              </div>
+            </div>
+            <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent"></div>
+          </div>
+        `;
+      }
+
+      animateSwap(html);
+    }
+
+    function update(){ counts(); renderSlide(); }
+
+    /* --------------------- actions --------------------- */
+    function next(){ idx = clamp(idx+1, 0, slides.length-1); update(); }
+    function prev(){ idx = clamp(idx-1, 0, slides.length-1); update(); }
+
+    function toggleNotes(){ notesOn = !notesOn; update(); }
+    function toggleOverview(){ overviewOn = !overviewOn; update(); }
+
+    function toggleRecord(){
+      recordMode = !recordMode;
+      document.body.classList.toggle("record", recordMode);
+      elRecordPill.classList.toggle("hidden", !recordMode);
+    }
+
+    async function toggleFs(){
+      try{
+        if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
+        else await document.exitFullscreen();
+      }catch{}
+    }
+
+    /* --------------------- keyboard --------------------- */
+    window.addEventListener("keydown", (e)=>{
+      const k = e.key.toLowerCase();
+
+      if (overviewOn){
+        if (k === "escape" || k === "g") { overviewOn=false; update(); }
+        return;
+      }
+
+      if (k === "arrowright" || e.key === " " || k === "pagedown") next();
+      if (k === "arrowleft" || k === "pageup") prev();
+      if (k === "n") toggleNotes();
+      if (k === "g") toggleOverview();
+      if (k === "r") toggleRecord();
+      if (k === "f") toggleFs();
+    });
+
+    /* init */
+    update();
+  </script>
+</body>
+</html>
