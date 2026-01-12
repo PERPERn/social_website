@@ -94,6 +94,9 @@
           <button id="btnNotes" title="Notes (N)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">📝</button>
           <button id="btnRecord" title="Record (R)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">🎥</button>
           <button id="btnFs" title="Fullscreen (F)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">⛶</button>
+          <button id="btnSpeak" title="Read slide (V)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">🔊</button>
+          <button id="btnAudio" title="Play pre-made audio (A)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">▶️</button>
+
         </div>
       </div>
 
@@ -138,6 +141,9 @@
       </div>
     </section>
   </main>
+  <!-- Audio player (pre-made .wav per slide) -->
+  <audio id="slideAudio" class="hidden" preload="none"></audio>
+
 
   <!-- Bottom bar -->
   <div class="bottombar fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b0f1a]/55 backdrop-blur-2xl">
@@ -342,6 +348,9 @@
     document.getElementById("btnOverview").onclick = () => toggleOverview();
     document.getElementById("btnRecord").onclick = () => toggleRecord();
     document.getElementById("btnFs").onclick = () => toggleFs();
+document.getElementById("btnSpeak").onclick = () => speakCurrent();
+    document.getElementById("btnAudio").onclick = () => playSlideAudio();
+
 
     /* --------------------- render helpers --------------------- */
     function setBgByYear(y){
@@ -383,6 +392,48 @@
       const d = document.createElement("div");
       d.innerHTML = html;
       return d.textContent || d.innerText || "";
+    }
+
+
+    /* --------------------- voice / audio --------------------- */
+    const elSlideAudio = document.getElementById("slideAudio");
+
+    function buildNarration(s){
+      const parts = [];
+      if (s.kicker) parts.push(stripTags(s.kicker));
+      if (s.title) parts.push(stripTags(s.title));
+      if (s.subtitle) parts.push(stripTags(s.subtitle));
+      (s.bullets||[]).forEach(b => parts.push(stripTags(b)));
+      return parts.filter(Boolean).join(". ");
+    }
+
+    function speakText(text){
+      try{
+        if (!("speechSynthesis" in window)) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = "th-TH"; // ถ้ามีเสียงไทยจะเลือกให้เอง ถ้าไม่มีก็ fallback เป็นเสียงระบบ
+        u.rate = 1.0;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      }catch(e){
+        console.warn("TTS failed", e);
+      }
+    }
+
+    function speakCurrent(){
+      const s = slides[idx];
+      speakText(buildNarration(s));
+    }
+
+    function playSlideAudio(){
+      try{
+        const fn = `./audio/slide_${String(idx+1).padStart(2,'0')}.wav`;
+        elSlideAudio.src = fn;
+        elSlideAudio.play();
+      }catch(e){
+        console.warn("Audio play failed", e);
+      }
     }
 
     function renderOverview(){
@@ -535,6 +586,8 @@
       if (k === "g") toggleOverview();
       if (k === "r") toggleRecord();
       if (k === "f") toggleFs();
+      if (k === "v") speakCurrent();
+      if (k === "a") playSlideAudio();
     });
 
     /* init */
