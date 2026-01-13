@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>WWI Deck • Mobile Safe</title>
-
+  <source src="./luvvoice.com-20260112-7woVTD.mp3" type="audio/mpeg">
   <!-- ✅ Tailwind config MUST be set BEFORE loading the CDN script -->
   <script>
     window.tailwind = window.tailwind || {};
@@ -47,7 +47,6 @@
     .record .mainpad { padding-bottom: 2.5rem !important; }
   </style>
 </head>
-
 <body class="bg-[#0b0f1a] text-white font-sans overflow-x-hidden">
   <!-- Background -->
   <div id="bg" class="fixed inset-0 bg-gradient-to-br from-yellow-500/8 via-transparent to-cyan-500/8"></div>
@@ -593,5 +592,58 @@ document.getElementById("btnSpeak").onclick = () => speakCurrent();
     /* init */
     update();
   </script>
+  <!-- 🎧 Extra Audio List -->
+<section class="relative z-20 mx-auto max-w-6xl px-4 sm:px-6 mt-16 mb-28">
+  <div class="rounded-3xl border border-white/15 bg-white/5 p-6 backdrop-blur-xl shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+
+    <div class="flex items-center gap-3 mb-5">
+      <span class="text-2xl">🎧</span>
+      <h2 class="text-lg font-bold text-white">
+        เสียงเพิ่มเติม (Optional Audio)
+      </h2>
+    </div>
+
+    <p class="text-sm text-white/70 mb-6">
+      เลือกเปิดฟังเสียงเสริมประกอบสไลด์ หรือฟังย้อนหลังได้ตามต้องการ
+    </p>
+
+    <!-- Audio Item -->
+    <div class="space-y-4">
+
+      <div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+        <div class="mb-2 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold text-white">
+              🔊 เสียงสรุปประกอบสไลด์
+            </div>
+            <div class="text-xs text-white/60">
+              Voice-over เสริมสำหรับปิดท้าย / ฟังรวบยอด
+            </div>
+          </div>
+        </div>
+
+        <audio controls preload="none" class="w-full">
+          <source src="./luvvoice.com-20260112-7woVTD.mp3" type="audio/mpeg">
+          เบราว์เซอร์ของคุณไม่รองรับการเล่นเสียง
+        </audio>
+      </div>
+
+      <!-- 🔁 ถ้ามีไฟล์เพิ่ม ให้ copy block นี้ไปวางต่อ -->
+      <!--
+      <div class="rounded-2xl border border-white/10 bg-black/30 p-4">
+        <div class="mb-2">
+          <div class="text-sm font-semibold text-white">🔊 ชื่อเสียง</div>
+          <div class="text-xs text-white/60">คำอธิบายเสียง</div>
+        </div>
+        <audio controls preload="none" class="w-full">
+          <source src="./audio/your-audio.mp3" type="audio/mpeg">
+        </audio>
+      </div>
+      -->
+
+    </div>
+  </div>
+</section>
+
 </body>
 </html>
