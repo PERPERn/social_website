@@ -45,6 +45,14 @@
 
     .record .topbar, .record .bottombar, .record .sidepanel { display: none !important; }
     .record .mainpad { padding-bottom: 2.5rem !important; }
+  
+    /* --- Flashcards --- */
+    .fc-persp { perspective: 1200px; }
+    .fc-card { transform-style: preserve-3d; transition: transform 520ms cubic-bezier(.22,1,.36,1); }
+    .fc-card.is-flipped { transform: rotateY(180deg); }
+    .fc-face { backface-visibility: hidden; }
+    .fc-back { transform: rotateY(180deg); }
+
   </style>
 </head>
 <body class="bg-[#0b0f1a] text-white font-sans overflow-x-hidden">
@@ -96,6 +104,9 @@
           <button id="btnSpeak" title="Read slide (V)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">🔊</button>
           <button id="btnAudio" title="Play pre-made audio (A)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">▶️</button>
 
+          <button id="btnFlash" title="Flashcards (C)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">🃏</button>
+          <button id="btnQuiz" title="Quiz (Q)" class="rounded-2xl border border-white/10 bg-white/5 p-3 text-white/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:bg-white/10 active:translate-y-[1px]">🧠</button>
+
         </div>
       </div>
 
@@ -139,7 +150,116 @@
         <b class="text-yellow-200">Presenter note:</b> <span id="notesText"></span>
       </div>
     </section>
-  </main>
+  
+    <!-- Study Zone: Flashcards + Quiz -->
+    <section id="studyWrap" class="hidden mt-8 space-y-6">
+      <div class="rounded-3xl border border-white/15 bg-white/5 p-5 sm:p-6 backdrop-blur-xl shadow-[0_30px_100px_rgba(0,0,0,0.45)]">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 grid place-items-center rounded-2xl border border-white/10 bg-white/5 text-xl">🎓</div>
+            <div>
+              <div class="text-sm font-semibold text-white/90">Study Zone</div>
+              <div class="text-xs text-white/60">Flashcards + Quiz (เจนข้อสอบแบบเรียลไทม์)</div>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="tabFlash" class="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 active:translate-y-[1px]">🃏 Flashcards</button>
+            <button id="tabQuiz" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]">🧠 Quiz 4 ตัวเลือก</button>
+            <button id="btnCloseStudy" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]">✕ ปิด</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flashcards Panel -->
+      <div id="flashPanel" class="rounded-3xl border border-white/15 bg-black/20 p-5 sm:p-6 backdrop-blur-xl shadow-[0_30px_100px_rgba(0,0,0,0.35)]">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div class="text-sm font-semibold text-white/90">🃏 Flashcards</div>
+            <div class="text-xs text-white/60">กดการ์ดเพื่อพลิก • ใช้ปุ่มเพื่อสุ่ม/เลื่อนไปการ์ดถัดไป</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="fcCount" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">Card 1/1</span>
+            <button id="btnFcPrev" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]">← ก่อนหน้า</button>
+            <button id="btnFcFlip" class="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 active:translate-y-[1px]">พลิก</button>
+            <button id="btnFcNext" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]">ถัดไป →</button>
+            <button id="btnFcShuffle" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]">🔀 สุ่ม</button>
+          </div>
+        </div>
+
+        <div class="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+          <div class="fc-persp">
+            <button id="fcCard" class="fc-card w-full text-left">
+              <div class="fc-face rounded-[28px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-7 sm:p-9 shadow-[0_35px_120px_rgba(0,0,0,0.55)]">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <span id="fcTag" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">Flashcard</span>
+                  <span class="text-xs text-white/55">กดเพื่อดูคำตอบ</span>
+                </div>
+                <div id="fcFront" class="text-balance text-2xl font-extrabold tracking-tight text-white/95 sm:text-3xl"></div>
+                <div id="fcHint" class="mt-3 text-sm leading-relaxed text-white/65"></div>
+              </div>
+
+              <div class="fc-face fc-back rounded-[28px] border border-white/10 bg-gradient-to-br from-black/40 to-white/5 p-7 sm:p-9 shadow-[0_35px_120px_rgba(0,0,0,0.55)]">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">คำตอบ</span>
+                  <span class="text-xs text-white/55">กดเพื่อกลับ</span>
+                </div>
+                <div id="fcBack" class="text-[15px] leading-7 text-white/85 sm:text-[16px]"></div>
+                <div id="fcSource" class="mt-4 text-xs text-white/55"></div>
+              </div>
+            </button>
+          </div>
+
+          <div class="space-y-4">
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-sm font-semibold text-white/90">โหมดฝึก</div>
+              <div class="mt-2 text-sm leading-relaxed text-white/70">
+                แนะนำ: อ่านสไลด์ → เปิด Flashcard → พูดคำตอบเองก่อนพลิก เพื่อฝึกความจำและการอธิบายเชิงเหตุผล
+              </div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="text-sm font-semibold text-white/90">คีย์ลัด</div>
+              <div class="mt-2 text-sm text-white/70">
+                <span class="font-semibold text-white/90">C</span> เปิด Flashcards •
+                <span class="font-semibold text-white/90">Q</span> เปิด Quiz •
+                <span class="font-semibold text-white/90">Esc</span> ปิด Study Zone
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <div class="mb-2 text-xs font-semibold text-white/70">All cards</div>
+          <div id="fcGrid" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+        </div>
+      </div>
+
+      <!-- Quiz Panel -->
+      <div id="quizPanel" class="hidden rounded-3xl border border-white/15 bg-black/20 p-5 sm:p-6 backdrop-blur-xl shadow-[0_30px_100px_rgba(0,0,0,0.35)]">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div class="text-sm font-semibold text-white/90">🧠 Quiz 4 ตัวเลือก (คิดวิเคราะห์)</div>
+            <div class="text-xs text-white/60">กด “เจนข้อสอบ” เพื่อสุ่มข้อสอบใหม่ได้ทุกครั้ง • ตอบครบแล้วกด “ตรวจคำตอบ”</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/80">
+              จำนวนข้อ
+              <select id="quizN" class="ml-2 rounded-xl border border-white/10 bg-black/40 px-2 py-1 text-xs text-white/90">
+                <option value="5">5</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+              </select>
+            </label>
+            <button id="btnQuizGen" class="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 active:translate-y-[1px]">🎲 เจนข้อสอบ</button>
+            <button id="btnQuizGrade" class="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]">✅ ตรวจคำตอบ</button>
+          </div>
+        </div>
+
+        <div id="quizMeta" class="mt-4 hidden rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/80"></div>
+        <div id="quizList" class="mt-5 space-y-4"></div>
+      </div>
+    </section>
+
+</main>
   <!-- Audio player (pre-made .wav per slide) -->
   <audio id="slideAudio" class="hidden" preload="none"></audio>
 
@@ -349,6 +469,516 @@
     document.getElementById("btnFs").onclick = () => toggleFs();
 document.getElementById("btnSpeak").onclick = () => speakCurrent();
     document.getElementById("btnAudio").onclick = () => playSlideAudio();
+
+    /* --------------------- Study Zone (Flashcards + Quiz) --------------------- */
+    const elStudyWrap = document.getElementById("studyWrap");
+    const elFlashPanel = document.getElementById("flashPanel");
+    const elQuizPanel = document.getElementById("quizPanel");
+
+    const btnFlash = document.getElementById("btnFlash");
+    const btnQuiz = document.getElementById("btnQuiz");
+    const btnCloseStudy = document.getElementById("btnCloseStudy");
+
+    const tabFlash = document.getElementById("tabFlash");
+    const tabQuiz = document.getElementById("tabQuiz");
+
+    // Flash refs
+    const elFcCard = document.getElementById("fcCard");
+    const elFcFront = document.getElementById("fcFront");
+    const elFcBack = document.getElementById("fcBack");
+    const elFcHint = document.getElementById("fcHint");
+    const elFcTag = document.getElementById("fcTag");
+    const elFcSource = document.getElementById("fcSource");
+    const elFcCount = document.getElementById("fcCount");
+    const elFcGrid = document.getElementById("fcGrid");
+    const btnFcPrev = document.getElementById("btnFcPrev");
+    const btnFcNext = document.getElementById("btnFcNext");
+    const btnFcFlip = document.getElementById("btnFcFlip");
+    const btnFcShuffle = document.getElementById("btnFcShuffle");
+
+    // Quiz refs
+    const elQuizList = document.getElementById("quizList");
+    const elQuizMeta = document.getElementById("quizMeta");
+    const elQuizN = document.getElementById("quizN");
+    const btnQuizGen = document.getElementById("btnQuizGen");
+    const btnQuizGrade = document.getElementById("btnQuizGrade");
+
+    let studyOn = false;
+    let activeStudyTab = "flash";
+
+    // -------- Flashcards data (built from slides) --------
+    let flashcards = [];
+    let fcOrder = [];
+    let fcIdx = 0;
+
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+    function bulletsToText(bullets){
+      const xs = (bullets||[]).map(b=>stripTags(b)).filter(Boolean);
+      if (!xs.length) return "";
+      return xs.map((t)=>"• "+t).join("\n");
+    }
+
+    function mkCard({front, back, hint="", tag="Flashcard", source=""}){
+      return { front, back, hint, tag, source };
+    }
+
+    function buildFlashcards(){
+      const cards = [];
+      slides.forEach((s, i)=>{
+        const title = stripTags(s.title||"");
+        const kicker = stripTags(s.kicker||"");
+        const y = s.year;
+
+        // Keyword-based "thinking" cards
+        const t = (title + " " + kicker).toLowerCase();
+
+        if (t.includes("main")){
+          cards.push(mkCard({
+            tag: "คิดวิเคราะห์ • สาเหตุเชิงระบบ",
+            front: "MAIN ในสาเหตุ WWI หมายถึงอะไร และทำไม “MAIN” ถึงทำให้วิกฤตเล็ก ๆ ลุกลามได้?",
+            hint: "ลองอธิบายทีละตัวอักษร แล้วโยงเรื่องพันธมิตร/ความกลัว",
+            back: [
+              "MAIN = Militarism (แข่งสะสมกองทัพ/อาวุธ), Alliances (พันธมิตรแข็งกร้าว), Imperialism (แข่งอาณานิคม/ทรัพยากร), Nationalism (ชาตินิยมรุนแรง).",
+              "มันไม่ใช่ ‘สาเหตุเดียว’ แต่เป็นแรงตึงสะสม ทำให้เมื่อเกิดวิกฤต ระบบการตัดสินใจ/พันธมิตรพาเหตุการณ์ลามเร็ว คุมยาก และทุกฝ่ายคิดว่าต้องรีบลงมือ."
+            ].join("\n\n"),
+            source: `อ้างอิงสไลด์ ${i+1} • ปี ${y}`
+          }));
+        }
+
+        if (t.includes("sarajevo") || t.includes("28") || t.includes("ชนวน")){
+          cards.push(mkCard({
+            tag: "คิดวิเคราะห์ • ชนวน vs สาเหตุ",
+            front: "ทำไม Sarajevo (28 มิ.ย. 1914) ถึงเป็น “ชนวน” แต่ไม่ใช่ “สาเหตุทั้งหมด” ของ WWI?",
+            hint: "ตอบให้มี 2 ชั้น: (1) เหตุการณ์ (2) ระบบที่พร้อมระเบิดอยู่แล้ว",
+            back: [
+              "เพราะเหตุการณ์ลอบสังหารเป็นประกายไฟที่จุดวิกฤตการทูตทันที (ออสเตรีย-ฮังการีต้องการลงโทษเซอร์เบีย).",
+              "แต่สาเหตุเชิงลึกคือความตึงเครียดสะสม (MAIN) + โครงสร้างพันธมิตร/ความหวาดระแวง ที่ทำให้การตอบโต้กลายเป็นโดมิโนทั้งทวีป."
+            ].join("\n\n"),
+            source: `อ้างอิงสไลด์ ${i+1} • ปี ${y}`
+          }));
+        }
+
+        if (t.includes("trench") || t.includes("สนามเพลาะ")){
+          cards.push(mkCard({
+            tag: "คิดวิเคราะห์ • รูปแบบการรบ",
+            front: "ทำไม Trench Warfare ทำให้สงคราม “ยืดเยื้อ” และกลายเป็นสงครามสึกหรอ?",
+            hint: "ตอบเรื่องเทคโนโลยีกับยุทธวิธีที่ไม่ทันกัน",
+            back: [
+              "แนวสนามเพลาะ + ลวดหนาม + ปืนกล/ปืนใหญ่ ทำให้การบุกผ่านพื้นที่เปิดแทบเป็นไปไม่ได้ → ตายมากแต่คืบหน้าน้อย.",
+              "เป้าหมายจึงเปลี่ยนเป็น ‘ทำให้อีกฝ่ายหมดแรง/หมดคน/หมดทรัพยากร’ มากกว่าชนะฉับพลัน."
+            ].join("\n\n"),
+            source: `อ้างอิงสไลด์ ${i+1} • ปี ${y}`
+          }));
+        }
+
+        if (t.includes("อาวุธใหม่") || t.includes("เทคโนโลยี")){
+          cards.push(mkCard({
+            tag: "คิดวิเคราะห์ • เทคโนโลยี & จริยธรรม",
+            front: "เทคโนโลยีใหม่ใน WWI เปลี่ยน “ต้นทุนของการตัดสินใจทำสงคราม” อย่างไร?",
+            hint: "ลองตอบว่า ‘ง่ายขึ้น/โหดขึ้น/กลัวขึ้น’ ยังไง",
+            back: [
+              "ปืนกล/ปืนใหญ่ทำให้การบุกแบบเดิมกลายเป็นการสังหารหมู่ → ต้นทุนชีวิตสูงมาก.",
+              "ก๊าซพิษเพิ่มความทรมานและความกลัวทางจิตใจ.",
+              "รถถัง/เครื่องบินคือจุดเริ่มสงครามยุคใหม่: เทคโนโลยีวิ่งเร็วกว่า ‘กรอบจริยธรรม’ ทำให้สงครามรุนแรงขึ้น."
+            ].join("\n\n"),
+            source: `อ้างอิงสไลด์ ${i+1} • ปี ${y}`
+          }));
+        }
+
+        if (t.includes("สันติภาพ") || t.includes("แวร์ซาย") || t.includes("che")){
+          cards.push(mkCard({
+            tag: "คิดวิเคราะห์ • หลังสงคราม",
+            front: "ทำไม ‘สันติภาพที่ลงโทษมากเกินไป’ จึงมักไม่ยั่งยืน? (โยงกับแวร์ซาย)",
+            hint: "ตอบด้วยเหตุผลทางเศรษฐกิจ + การเมือง + จิตวิทยาสังคม",
+            back: [
+              "เงื่อนไขลงโทษหนักทำให้เศรษฐกิจ/การเมืองปั่นป่วนและเกิดความคับแค้น.",
+              "ความอับอาย/ภาระชดเชยเปิดพื้นที่ให้แนวคิดสุดโต่งและการเมืองแบบเอาคืน.",
+              "จึงกลายเป็นเชื้อไฟของความขัดแย้งรอบถัดไปมากกว่าการปิดจบปัญหา."
+            ].join("\n\n"),
+            source: `อ้างอิงสไลด์ ${i+1} • ปี ${y}`
+          }));
+        }
+
+        // Default card (summary) — keep it faithful to your old content
+        const btxt = bulletsToText(s.bullets);
+        const sideTxt = (s.side||[]).map(x=>`• ${x.h}: ${x.t}`).join("\n");
+        const backParts = [];
+        if (s.subtitle) backParts.push(stripTags(s.subtitle));
+        if (btxt) backParts.push(btxt);
+        if (sideTxt) backParts.push(sideTxt);
+
+        cards.push(mkCard({
+          tag: `สรุป • สไลด์ ${i+1}`,
+          front: title ? `อธิบายประเด็นของสไลด์นี้: “${title}”` : `อธิบายสไลด์ ${i+1}`,
+          hint: "ลองสรุป 2–3 ประโยคก่อน แล้วค่อยไล่ bullet",
+          back: backParts.filter(Boolean).join("\n\n"),
+          source: `อ้างอิงสไลด์ ${i+1} • ปี ${y}`
+        }));
+      });
+
+      flashcards = cards;
+      fcOrder = [...Array(flashcards.length)].map((_,i)=>i);
+      fcIdx = 0;
+      renderFlashGrid();
+      renderFlashCard();
+    }
+
+    function renderFlashGrid(){
+      elFcGrid.innerHTML = "";
+      flashcards.forEach((c, i)=>{
+        const b = document.createElement("button");
+        b.className = "rounded-2xl border border-white/10 bg-white/5 p-4 text-left transition hover:bg-white/10 active:translate-y-[1px]";
+        b.innerHTML = `
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <div class="text-xs text-white/70">${c.tag}</div>
+            <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-white/70">#${i+1}</span>
+          </div>
+          <div class="lc2 text-sm font-semibold text-white/90">${c.front}</div>
+          <div class="mt-2 lc3 text-xs text-white/60">${(c.hint||"").replace(/</g,"&lt;")}</div>
+        `;
+        b.onclick = ()=>{
+          fcIdx = fcOrder.indexOf(i);
+          if (fcIdx < 0) fcIdx = 0;
+          elFcCard.classList.remove("is-flipped");
+          renderFlashCard();
+        };
+        elFcGrid.appendChild(b);
+      });
+    }
+
+    function renderFlashCard(){
+      if (!flashcards.length) return;
+      const realIdx = fcOrder[fcIdx];
+      const c = flashcards[realIdx];
+
+      elFcFront.textContent = c.front;
+      elFcHint.textContent = c.hint || "";
+      elFcBack.textContent = c.back || "";
+      elFcTag.textContent = c.tag || "Flashcard";
+      elFcSource.textContent = c.source || "";
+      elFcCount.textContent = `Card ${fcIdx+1}/${fcOrder.length}`;
+    }
+
+    function fcPrev(){
+      fcIdx = clamp(fcIdx-1, 0, fcOrder.length-1);
+      elFcCard.classList.remove("is-flipped");
+      renderFlashCard();
+    }
+    function fcNext(){
+      fcIdx = clamp(fcIdx+1, 0, fcOrder.length-1);
+      elFcCard.classList.remove("is-flipped");
+      renderFlashCard();
+    }
+    function fcFlip(){
+      elFcCard.classList.toggle("is-flipped");
+    }
+    function fcShuffle(){
+      // Fisher-Yates
+      for (let i = fcOrder.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [fcOrder[i], fcOrder[j]] = [fcOrder[j], fcOrder[i]];
+      }
+      fcIdx = 0;
+      elFcCard.classList.remove("is-flipped");
+      renderFlashCard();
+    }
+
+    // -------- Quiz pool (4-choice, thinking-oriented) --------
+    const quizPool = [
+      {
+        tag: "วิเคราะห์ระบบ",
+        q: "ถ้าระบบพันธมิตรแข็งกร้าว (Alliances) ไม่มีอยู่ในยุโรปก่อนปี 1914 วิกฤต Sarajevo มีแนวโน้ม ‘ลุกลาม’ น้อยลงเพราะอะไร?",
+        choices: [
+          "การตัดสินใจของรัฐจะจำกัดอยู่ในวงคู่ขัดแย้งมากขึ้น ไม่ดึงรัฐอื่นเข้ามาโดยอัตโนมัติ",
+          "อาวุธจะหายไปทันที ทำให้ไม่มีสงคราม",
+          "ชาตินิยมจะหายไปเอง",
+          "การทูตจะไม่จำเป็นอีกต่อไป"
+        ],
+        ans: 0,
+        explain: "พันธมิตรทำให้การตอบโต้กลายเป็นโดมิโน เมื่อหนึ่งฝ่ายเคลื่อนไหว อีกฝ่ายถูกดึงเข้ามาเพื่อรักษาความน่าเชื่อถือของพันธมิตร.",
+        source: "โยง MAIN + ชนวน"
+      },
+      {
+        tag: "ชนวน vs สาเหตุ",
+        q: "เหตุใดการลอบสังหารที่ Sarajevo จึงถูกมองว่าเป็น ‘ชนวน’ มากกว่า ‘สาเหตุทั้งหมด’ ของ WWI?",
+        choices: [
+          "เพราะเป็นเหตุการณ์เดียวที่เกิดขึ้นในสงครามทั้งหมด",
+          "เพราะก่อนหน้านั้นยุโรปไม่มีความตึงเครียดสะสมเลย",
+          "เพราะความตึงเครียดเชิงระบบสะสมอยู่แล้ว เหตุการณ์นี้เพียงจุดให้ระเบิด",
+          "เพราะเกิดในปี 1918"
+        ],
+        ans: 2,
+        explain: "สาเหตุเชิงระบบ (MAIN) สะสมอยู่แล้ว ทำให้เหตุการณ์เล็กกลายเป็นวิกฤตใหญ่ได้ง่าย.",
+        source: "สไลด์ชนวน + MAIN"
+      },
+      {
+        tag: "สนามเพลาะ",
+        q: "เพราะอะไร ‘ปืนกล + ปืนใหญ่’ จึงทำให้แนวรบตะวันตก ‘ตรึง’ และเกิดสงครามสึกหรอ?",
+        choices: [
+          "ทำให้การป้องกันได้เปรียบ การบุกกลางพื้นที่เปิดเสี่ยงตายสูง",
+          "ทำให้การบุกเร็วขึ้นมาก จบสงครามใน 1 วัน",
+          "ทำให้ไม่มีการสูญเสีย",
+          "ทำให้การสื่อสารทางการทูตดีขึ้น"
+        ],
+        ans: 0,
+        explain: "เทคโนโลยีการยิงทำให้ฝ่ายรับได้เปรียบ แนวรบจึงคงที่และยืดเยื้อ.",
+        source: "Trench warfare"
+      },
+      {
+        tag: "เทคโนโลยีกับจริยธรรม",
+        q: "ข้อความไหนสอดคล้องกับแนวคิด ‘เทคโนโลยีเร็วกว่า จริยธรรม’ ใน WWI มากที่สุด?",
+        choices: [
+          "อาวุธใหม่ทำให้สงครามปลอดภัยขึ้นสำหรับทุกคน",
+          "การพัฒนาอาวุธใหม่เกิดเร็ว แต่กรอบจริยธรรม/กฎหมายตามไม่ทัน จึงเพิ่มความโหดของสงคราม",
+          "เทคโนโลยีทำให้การทูตไม่ต้องใช้แล้ว",
+          "อาวุธใหม่ทำให้ไม่มีผู้บาดเจ็บ"
+        ],
+        ans: 1,
+        explain: "อาวุธใหม่เพิ่มความรุนแรงและความทรมาน แต่กรอบจริยธรรมและการกำกับดูแลปรับตัวช้า.",
+        source: "อาวุธใหม่"
+      },
+      {
+        tag: "ผลกระทบสังคม",
+        q: "ข้อใด ‘เชื่อมโยงเหตุ–ผล’ ได้ดีที่สุดจากผลกระทบ WWI ต่อสังคม?",
+        choices: [
+          "ผู้หญิงเข้าทำงานโรงงาน → บทบาททางสังคมเปลี่ยนอย่างถาวร",
+          "ผู้เสียชีวิตมาก → สงครามสั้นลง",
+          "เกิด trauma → ทำให้คนไม่ต้องรักษา",
+          "รัฐล่มสลาย → ทำให้พรมแดนชัดเจนขึ้นเสมอ"
+        ],
+        ans: 0,
+        explain: "สงครามดึงแรงงานจำนวนมากไปแนวหน้า ทำให้ผู้หญิงเข้าสู่แรงงานอุตสาหกรรม/บริการและเปลี่ยนบทบาทในระยะยาว.",
+        source: "ผลกระทบสังคม"
+      },
+      {
+        tag: "หลังสงคราม",
+        q: "ทำไมสนธิสัญญาที่ลงโทษฝ่ายแพ้หนักเกินไปอาจ ‘สร้างความเสี่ยง’ ต่อสงครามครั้งใหม่?",
+        choices: [
+          "เพราะทำให้เกิดความคับแค้น เศรษฐกิจ/การเมืองปั่นป่วน และเปิดทางแนวคิดสุดโต่ง",
+          "เพราะทำให้ทุกฝ่ายมีความสุขเสมอ",
+          "เพราะทำให้ไม่มีรัฐใหม่เกิดขึ้น",
+          "เพราะทำให้เทคโนโลยีหยุดพัฒนา"
+        ],
+        ans: 0,
+        explain: "ความคับแค้นและความไม่มั่นคงเป็นเชื้อเพลิงให้การเมืองแบบเอาคืนและสุดโต่ง.",
+        source: "แวร์ซาย/บทเรียน"
+      },
+      {
+        tag: "วิเคราะห์สถานการณ์",
+        q: "ถ้าเกิด ‘ความหวาดระแวง’ ว่าอีกฝ่ายจะโจมตีก่อน (security dilemma) สิ่งใดเป็น ‘ทางออกเชิงระบบ’ ที่สอดคล้องกับบทเรียน WWI?",
+        choices: [
+          "เพิ่มอาวุธแข่งกันต่อไปโดยไม่ต้องสื่อสาร",
+          "สร้างกลไกการทูต/การคลี่คลายวิกฤตและช่องทางสื่อสารที่เชื่อถือได้",
+          "ยกเลิกการเจรจาทั้งหมด",
+          "ตัดการติดต่อทุกประเทศ"
+        ],
+        ans: 1,
+        explain: "บทเรียนในสไลด์ท้ายย้ำว่ากลไกการทูตและการคลี่คลายวิกฤตช่วยลดโอกาสโดมิโนการยกระดับ.",
+        source: "บทเรียนจาก WWI"
+      },
+      {
+        tag: "สรุปภาพรวม",
+        q: "ข้อใดสะท้อนมุมมอง ‘สงครามไม่ใช่สิ่งหลีกเลี่ยงไม่ได้’ ได้ดีที่สุด?",
+        choices: [
+          "สงครามเกิดขึ้นเพราะโชคชะตาเท่านั้น",
+          "สงครามเป็นผลของการตัดสินใจภายใต้ระบบที่ล้มเหลว และสามารถออกแบบระบบให้ลดความเสี่ยงได้",
+          "สงครามเกิดเพราะอาวุธล้วน ๆ ไม่เกี่ยวกับการตัดสินใจ",
+          "สงครามเกิดเพราะปี 1914 เป็นปีต้องคำสาป"
+        ],
+        ans: 1,
+        explain: "สไลด์ท้ายเน้นบทบาท ‘ระบบ + การตัดสินใจ’ และการออกแบบกลไกเพื่อลดความเสี่ยงในอนาคต.",
+        source: "ประโยคปิดคลิป"
+      },
+      {
+        tag: "ตรวจความเข้าใจ",
+        q: "ข้อใดต่อไปนี้เป็นชุดคำที่สอดคล้องกับ MAIN ถูกต้อง?",
+        choices: [
+          "Militarism, Alliances, Imperialism, Nationalism",
+          "Money, Arms, Industry, Nations",
+          "Modernism, Airpower, Iron, Neutrality",
+          "Markets, Alliances, Immigration, Negotiation"
+        ],
+        ans: 0,
+        explain: "MAIN ใช้จำ 4 ปัจจัยสะสมความตึงเครียดก่อนสงคราม.",
+        source: "สไลด์ MAIN"
+      },
+      {
+        tag: "คิดวิเคราะห์ • เทคโนโลยี",
+        q: "ถ้ารถถังยุคแรกยังมีข้อจำกัด แต่ถูกนำมาใช้แล้ว ‘คุณค่าเชิงระบบ’ ของมันคืออะไร?",
+        choices: [
+          "เป็นสัญลักษณ์ว่ามีเทคโนโลยีใหม่ที่จะเปลี่ยนวิธีรบในอนาคต แม้ช่วงแรกยังไม่สมบูรณ์",
+          "ทำให้สนามเพลาะหายไปทันทีในวันเดียว",
+          "ทำให้ไม่มีปืนกลอีกต่อไป",
+          "ทำให้สงครามจบโดยไม่ต้องเจรจา"
+        ],
+        ans: 0,
+        explain: "รถถังคือจุดเริ่มของแนวคิดการรบแบบเคลื่อนที่/ทะลวงแนวป้องกัน แม้ช่วงแรกจำกัดแต่เป็นฐานของสงครามยุคใหม่.",
+        source: "อาวุธใหม่"
+      },
+      {
+        tag: "คิดวิเคราะห์ • สังคม",
+        q: "ทำไมการเกิด trauma (shell shock) จึงสำคัญต่อความเข้าใจสงครามสมัยใหม่?",
+        choices: [
+          "เพราะทำให้คนลืมสงครามได้ทันที",
+          "เพราะชี้ว่า ‘ผลกระทบ’ ไม่ได้มีแค่ร่างกาย แต่มีบาดแผลทางใจและสังคมระยะยาว",
+          "เพราะทำให้ไม่มีทหารผ่านศึก",
+          "เพราะทำให้สงครามสั้นลง"
+        ],
+        ans: 1,
+        explain: "แนวคิด PTSD สะท้อนว่าผลกระทบสงครามอยู่ในจิตใจและโครงสร้างสังคม ไม่จบที่สนามรบ.",
+        source: "ผลกระทบสังคม"
+      }
+    ];
+
+    let currentQuiz = [];
+
+    function shuffleInPlace(a){
+      for (let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+      }
+      return a;
+    }
+
+    function setTab(tab){
+      activeStudyTab = tab;
+      const onFlash = tab === "flash";
+      elFlashPanel.classList.toggle("hidden", !onFlash);
+      elQuizPanel.classList.toggle("hidden", onFlash);
+
+      tabFlash.className = onFlash
+        ? "rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 active:translate-y-[1px]"
+        : "rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]";
+
+      tabQuiz.className = !onFlash
+        ? "rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 active:translate-y-[1px]"
+        : "rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 active:translate-y-[1px]";
+
+      if (!onFlash) {
+        if (!currentQuiz.length) genQuiz();
+      } else {
+        if (!flashcards.length) buildFlashcards();
+      }
+    }
+
+    function openStudy(tab="flash"){
+      studyOn = true;
+      elStudyWrap.classList.remove("hidden");
+      setTab(tab);
+      // scroll into view nicely
+      elStudyWrap.scrollIntoView({behavior:"smooth", block:"start"});
+    }
+
+    function closeStudy(){
+      studyOn = false;
+      elStudyWrap.classList.add("hidden");
+      elQuizMeta.classList.add("hidden");
+      // reset flip so it doesn't look weird next time
+      elFcCard.classList.remove("is-flipped");
+    }
+
+    function genQuiz(){
+      const n = parseInt(elQuizN.value || "5", 10);
+      const pool = shuffleInPlace([...quizPool]);
+      currentQuiz = pool.slice(0, Math.min(n, pool.length));
+      renderQuiz(false);
+    }
+
+    function renderQuiz(showGrade){
+      elQuizList.innerHTML = "";
+      elQuizMeta.classList.add("hidden");
+      elQuizMeta.textContent = "";
+
+      currentQuiz.forEach((qq, i)=>{
+        const card = document.createElement("div");
+        card.className = "rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_25px_80px_rgba(0,0,0,0.35)]";
+        const name = `q_${i}`;
+        const opts = qq.choices.map((c, k)=>{
+          return `
+            <label class="group flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:bg-black/35">
+              <input type="radio" name="${name}" value="${k}" class="mt-1">
+              <div class="flex-1">
+                <div class="text-sm leading-relaxed text-white/85">${c}</div>
+              </div>
+            </label>
+          `;
+        }).join("");
+
+        card.innerHTML = `
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <span class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/80">${qq.tag}</span>
+            <span class="text-xs text-white/55">ข้อ ${i+1}/${currentQuiz.length}</span>
+          </div>
+          <div class="text-balance text-lg font-extrabold tracking-tight text-white/95">${qq.q}</div>
+          <div class="mt-4 space-y-3">${opts}</div>
+          <div id="exp_${i}" class="mt-4 hidden rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-white/80"></div>
+        `;
+        elQuizList.appendChild(card);
+
+        if (showGrade){
+          const chosen = document.querySelector(`input[name="${name}"]:checked`);
+          const val = chosen ? parseInt(chosen.value, 10) : -1;
+
+          // decorate options
+          const labels = card.querySelectorAll("label");
+          labels.forEach((lab, k)=>{
+            const base = "group flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:bg-black/35";
+            if (k === qq.ans) {
+              lab.className = base + " ring-2 ring-yellow-300/60 bg-yellow-300/10";
+            } else if (k === val && val !== qq.ans) {
+              lab.className = base + " ring-2 ring-rose-400/60 bg-rose-400/10";
+            } else {
+              lab.className = base;
+            }
+          });
+
+          const exp = document.getElementById(`exp_${i}`);
+          exp.classList.remove("hidden");
+          const ok = (val === qq.ans);
+          exp.innerHTML = `
+            <div class="mb-2 font-semibold ${ok ? "text-yellow-200" : "text-rose-200"}">
+              ${ok ? "✅ ถูกต้อง" : "❌ ยังไม่ถูก"} • เฉลย: ${["A","B","C","D"][qq.ans]}
+            </div>
+            <div class="text-white/80">${qq.explain}</div>
+            <div class="mt-2 text-xs text-white/55">อ้างอิง: ${qq.source}</div>
+          `;
+        }
+      });
+    }
+
+    function gradeQuiz(){
+      const total = currentQuiz.length;
+      let score = 0;
+      currentQuiz.forEach((qq, i)=>{
+        const chosen = document.querySelector(`input[name="q_${i}"]:checked`);
+        const val = chosen ? parseInt(chosen.value, 10) : -1;
+        if (val === qq.ans) score++;
+      });
+      renderQuiz(true);
+      elQuizMeta.classList.remove("hidden");
+      elQuizMeta.textContent = `คะแนนของคุณ: ${score}/${total} • ดูเฉลยและเหตุผลใต้แต่ละข้อได้เลย`;
+      elQuizMeta.scrollIntoView({behavior:"smooth", block:"start"});
+    }
+
+    // -------- wire study buttons --------
+    if (btnFlash) btnFlash.onclick = ()=> openStudy("flash");
+    if (btnQuiz) btnQuiz.onclick = ()=> openStudy("quiz");
+    if (btnCloseStudy) btnCloseStudy.onclick = ()=> closeStudy();
+    if (tabFlash) tabFlash.onclick = ()=> setTab("flash");
+    if (tabQuiz) tabQuiz.onclick = ()=> setTab("quiz");
+
+    // Flash controls
+    if (elFcCard) elFcCard.onclick = ()=> fcFlip();
+    if (btnFcPrev) btnFcPrev.onclick = ()=> fcPrev();
+    if (btnFcNext) btnFcNext.onclick = ()=> fcNext();
+    if (btnFcFlip) btnFcFlip.onclick = ()=> fcFlip();
+    if (btnFcShuffle) btnFcShuffle.onclick = ()=> fcShuffle();
+
+    // Quiz controls
+    if (btnQuizGen) btnQuizGen.onclick = ()=> genQuiz();
+    if (btnQuizGrade) btnQuizGrade.onclick = ()=> gradeQuiz();
+
 
 
     /* --------------------- render helpers --------------------- */
@@ -573,6 +1203,22 @@ document.getElementById("btnSpeak").onclick = () => speakCurrent();
     /* --------------------- keyboard --------------------- */
     window.addEventListener("keydown", (e)=>{
       const k = e.key.toLowerCase();
+      // Study Zone shortcuts
+      if (studyOn){
+        if (k === "escape") { closeStudy(); return; }
+        if (k === "c") { setTab("flash"); return; }
+        if (k === "q") { setTab("quiz"); return; }
+        // allow arrow keys for flashcards
+        if (activeStudyTab === "flash"){
+          if (k === "arrowright") { fcNext(); return; }
+          if (k === "arrowleft") { fcPrev(); return; }
+          if (k === " ") { fcFlip(); return; }
+        }
+      } else {
+        if (k === "c") { openStudy("flash"); return; }
+        if (k === "q") { openStudy("quiz"); return; }
+      }
+
 
       if (overviewOn){
         if (k === "escape" || k === "g") { overviewOn=false; update(); }
